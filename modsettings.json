@@ -1,0 +1,80 @@
+{
+    "Version": "1.00",
+    "Sections": [
+        {
+            "Name": "ReputationDisplay",
+            "Description": "Options for displaying Reputation information",
+            "IsAdvanced": false,
+            "Keys": [
+                {
+                    "Value": false,
+                    "Name": "useRawNumbers",
+                    "Description": " Displays raw numbers (-100 to 100) instead of Text for Reputation values | Default: false",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.ToggleKey"
+                }
+            ],
+            "$version": "v1"
+        },
+        {
+            "Name": "TextDisplay",
+            "Description": "Options for tweaking how text is displayed based on your font",
+            "IsAdvanced": false,
+            "Keys": [
+                {
+                    "Value": false,
+                    "Name": "overrideDefaultSettings",
+                    "Description": "If you have font overlap issues, enable this and tweak the settings below.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.ToggleKey"
+                },
+                {
+                    "Min": 1,
+                    "Max": 180,
+                    "Value": 125,
+                    "Name": "twoColumnTabSetting",
+                    "Description": "# of spaces between two column displays (like Guilds <-> Rank) DEF: 125",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.SliderIntKey"
+                },
+                {
+                    "Min": 1,
+                    "Max": 180,
+                    "Value": 70,
+                    "Name": "fourColumnTabSetting1",
+                    "Description": "# of spaces between the first two columns of a 4 column display.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.SliderIntKey"
+                },
+                {
+                    "Min": 1,
+                    "Max": 180,
+                    "Value": 125,
+                    "Name": "fourColumnTabSetting2",
+                    "Description": "# of spaces between the first and third columns of a 4 column display.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.SliderIntKey"
+                },
+                {
+                    "Min": 1,
+                    "Max": 180,
+                    "Value": 180,
+                    "Name": "fourColumnTabSetting3",
+                    "Description": "# of spaces between the first and fourth columns of a 4 column display.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.SliderIntKey"
+                },
+                {
+                    "Min": 0.5,
+                    "Max": 1.5,
+                    "Value": 0.85,
+                    "Name": "textScale",
+                    "Description": "Scales the size of your text by a percentage value (DEF: 0.85)",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.SliderFloatKey"
+                }
+            ],
+            "$version": "v1"
+        }
+    ]
+}
