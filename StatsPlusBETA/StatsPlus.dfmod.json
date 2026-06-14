@@ -1,0 +1,19 @@
+{
+    "ModTitle": "StatsPlus",
+    "ModVersion": "1.0.0",
+    "ModAuthor": "Caulzy",
+    "ContactInfo": "Nexus Mods (Caulzy)",
+    "DFUnity_Version": "1.1.1",
+    "ModDescription": "Expands the Affiliations screen and character sheet",
+    "GUID": "a9ad965d-5997-4e18-b5ec-b3a1138dd179",
+    "Files": [
+        "Assets/Game/Mods/StatsPlus/Scripts/AffiliationsPlusMain.cs",
+        "Assets/Game/Mods/StatsPlus/Scripts/AffiliationsPlusWindow.cs",
+        "Assets/Game/Mods/StatsPlus/Scripts/DaggerStatsMain.cs",
+        "Assets/Game/Mods/StatsPlus/Scripts/DaggerStatsWindow.cs",
+        "Assets/Game/Mods/StatsPlus/Textures/AP_BUTTON_BG.png",
+        "Assets/Game/Mods/StatsPlus/Textures/AP_WINDOW_BG.png",
+        "Assets/Game/Mods/StatsPlus/Textures/DS_WINDOW_BG.png",
+        "Assets/Game/Mods/StatsPlus/modsettings.json"
+    ]
+}
