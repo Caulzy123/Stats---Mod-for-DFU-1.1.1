@@ -14,6 +14,7 @@ Because this project is in active development, it is currently intended for manu
 * Keep Great Mods Alive: Bundle and preserve the excellent work of Rith Essa (DaggerStats and AffiliationsPlus).
 * Deep Optimisation: Rewrite backend logic to stop data-swallowing, eliminate Garbage Collection stuttering, and ensure compatibility across all devices.
 * Streamlined Architecture: Unify similar UI tools under one hood to reduce mod-list bloat and improve game loading stability.
+* Viewable Skill Progress will be bundled into this soon (Permission recieved), with unified framework!
 
 ------------------------------
 ## 🚀 Progress So Far
