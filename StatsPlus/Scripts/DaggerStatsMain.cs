@@ -775,6 +775,7 @@ namespace DaggerStats
 	    	mod = initParams.Mod;
 
 	    	var go = new GameObject(mod.Title);
+			
 			instance = go.AddComponent<DaggerStatsMain>();
 			Instance = instance;
 
@@ -793,7 +794,7 @@ namespace DaggerStats
 			DaggerfallBankManager.OnSellShip += OnSellShip;
 			DaggerfallBankManager.OnWithdrawGold += OnWithdrawGold;
 	    }
-
+		
 	    void Awake()
 	    {
     		SetupWeaponCount();
@@ -1103,7 +1104,7 @@ namespace DaggerStats
 	    {
 	    	UserInterfaceManager uiManager = DaggerfallUI.Instance.UserInterfaceManager;	
     		DaggerStatsWindow statsWindow = new DaggerStatsWindow(DaggerfallUI.UIManager);
-    		statsWindow.AllowCancel = false;
+    		statsWindow.AllowCancel = true;
     		DaggerfallUI.UIManager.PushWindow(statsWindow);
 	    }
 

@@ -332,8 +332,18 @@ namespace DaggerStats
             //exitButton.Label.Text = "Exit";
             //exitButton.BackgroundColor = Color.red;
             mainPanel.Components.Add(exitButton); 
-        }
+        {}
         #endregion
+        DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+        // Route the physical click through the ESC key logic
+        }
+        public override void CancelWindow()
+        {
+        // Reset the gatekeeper boolean so the window can be opened again later
+        DaggerStatsMain.Instance.openedDaggerStatsWindow = false;
+        base.CancelWindow();
+        
+        }
 
         private void ExitButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
