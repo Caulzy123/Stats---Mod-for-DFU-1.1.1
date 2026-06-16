@@ -25,6 +25,6 @@ StatsPlusBETA! - Daggerstats, AffiliationPlus and Viewable Skill Progress as one
 This project is in active development and is currently intended for manual source-code review, peer compilation, and community testing.
 
 ## ⚠️ Attention Windows, Linux and macOS Developers (Help Wanted!)
-Due to legacy build-pipeline limitations inside Unity 2019 under modern macOS environments, the Unity Mod Builder GUI fails to package the output assets correctly on local Mac systems.
+Due to legacy build-pipeline limitations inside Unity 2019 under modern macOS environments (for me anyway), the Unity Mod Builder GUI fails to package the output assets correctly on local Mac systems.
 
 Community testing, code reviews on our update loops, and compiled .dfmod feedback are highly appreciated! Please feel free to open an Issue, submit a Pull Request, or reach out in the Discord thread.
