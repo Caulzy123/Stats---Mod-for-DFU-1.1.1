@@ -1,4 +1,4 @@
-Daggerstats, AffiliationPlus and Viewable Skill Progress as one Character Sheet overhaul!
+STatsPlusBETA! - Daggerstats, AffiliationPlus and Viewable Skill Progress as one Character Sheet overhaul!
 
 ## 🎯 More Project Goals & Architecture
 
@@ -31,6 +31,3 @@ Due to legacy build-pipeline limitations inside Unity 2019 under modern macOS en
 * Windows Compilation Help Needed: If you are running Unity 2019.4.40f1 on a Windows machine, pulling this repository and running a clean build via the standard DFU Mod Builder window will successfully output the final portable container.
 
 Community testing, code reviews on our update loops, and compiled .dfmod feedback are highly appreciated! Please feel free to open an Issue, submit a Pull Request, or reach out in the Discord thread.
-------------------------------
-This format uses markdown callouts (> [!IMPORTANT]) which render beautifully on modern GitHub layouts to draw focus right to your call for compilation help.
-Once you commit this to your repository, would you like me to draft a quick GitHub issue template or a text post you can bump your Discord thread with tomorrow to get eyes on it?
