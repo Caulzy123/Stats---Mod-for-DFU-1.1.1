@@ -1,22 +1,21 @@
 {
-    "ModTitle": "Stats+",
+    "ModTitle": "StatsPlus",
     "ModVersion": "1.0.0",
     "ModAuthor": "Caulzy",
     "ContactInfo": "Nexus Mods (Caulzy)",
     "DFUnity_Version": "1.1.1",
-    "ModDescription": "Expands the Affiliations screen to display local Reputations and adds comprehensive character statistics tracking",
+    "ModDescription": "Expands the Affiliations screen and character sheet",
     "GUID": "a9ad965d-5997-4e18-b5ec-b3a1138dd179",
-    "Dependencies": [
-        "com.github.interkarma.dfu.harmony"
-    ],
     "Files": [
-        "Assets/Game/Mods/Stats+/Scripts/AffiliationsPlusMain.cs",
-        "Assets/Game/Mods/Stats+/Scripts/AffiliationsPlusWindow.cs",
-        "Assets/Game/Mods/Stats+/Scripts/DaggerStatsMain.cs",
-        "Assets/Game/Mods/Stats+/Scripts/DaggerStatsWindow.cs",
-        "Assets/Game/Mods/Stats+/Textures/AP_BUTTON_BG.png",
-        "Assets/Game/Mods/Stats+/Textures/AP_WINDOW_BG.png",
-        "Assets/Game/Mods/Stats+/Textures/DS_WINDOW_BG.png",
-        "Assets/Game/Mods/Stats+/modsettings.json"
+        "Assets/Game/Mods/StatsPlus/Scripts/AffiliationsPlusMain.cs",
+        "Assets/Game/Mods/StatsPlus/Scripts/AffiliationsPlusWindow.cs",
+        "Assets/Game/Mods/StatsPlus/Scripts/DaggerStatsMain.cs",
+        "Assets/Game/Mods/StatsPlus/Scripts/DaggerStatsWindow.cs",
+        "Assets/Game/Mods/StatsPlus/Scripts/ViewableSkillProgressMain.cs",
+        "Assets/Game/Mods/StatsPlus/Scripts/VSPCharacterSheetOverride.cs",
+        "Assets/Game/Mods/StatsPlus/Textures/AP_BUTTON_BG.png",
+        "Assets/Game/Mods/StatsPlus/Textures/AP_WINDOW_BG.png",
+        "Assets/Game/Mods/StatsPlus/Textures/DS_WINDOW_BG.png",
+        "Assets/Game/Mods/StatsPlus/modsettings.json"
     ]
 }
