@@ -1,6 +1,3 @@
-// Affiliations Plus Mod
-// by rithessa at Nexus Mods
-
 using UnityEngine;
 using DaggerfallWorkshop;
 using DaggerfallWorkshop.Game;
