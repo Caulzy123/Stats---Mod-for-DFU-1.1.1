@@ -27,7 +27,4 @@ This project is in active development and is currently intended for manual sourc
 ## ⚠️ Attention Windows, Linux and macOS Developers (Help Wanted!)
 Due to legacy build-pipeline limitations inside Unity 2019 under modern macOS environments, the Unity Mod Builder GUI fails to package the output assets correctly on local Mac systems.
 
-* How to Test Locally (Mac/Windows): You can safely test the raw code scripts immediately by bypassing the .dfmod container wrapper. Simply drop the raw .cs scripts and your modsettings.json directly into your live game's StreamingAssets/Scripts/ directory, and your .png assets into StreamingAssets/Textures/. DFU's internal startup engine will interpret and compile them live.
-* Windows Compilation Help Needed: If you are running Unity 2019.4.40f1 on a Windows machine, pulling this repository and running a clean build via the standard DFU Mod Builder window will successfully output the final portable container.
-
 Community testing, code reviews on our update loops, and compiled .dfmod feedback are highly appreciated! Please feel free to open an Issue, submit a Pull Request, or reach out in the Discord thread.
