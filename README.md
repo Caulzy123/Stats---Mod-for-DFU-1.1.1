@@ -1,4 +1,4 @@
-STatsPlusBETA! - Daggerstats, AffiliationPlus and Viewable Skill Progress as one Character Sheet overhaul!
+StatsPlusBETA! - Daggerstats, AffiliationPlus and Viewable Skill Progress as one Character Sheet overhaul!
 
 ## 🎯 More Project Goals & Architecture
 
