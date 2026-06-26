@@ -6,7 +6,7 @@ using DaggerfallConnect.Arena2;
 using DaggerfallWorkshop.Game.UserInterface;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Formulas;
-using ViewableSkillProgress;
+using StatsPlus;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 {

@@ -24,12 +24,15 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace DaggerStats
+namespace StatsPlus
 {
 	// Save Data 
 	[FullSerializer.fsObject("v1")]
 	public class DaggerStatsSaveData
 	{
+    // VSP DATA
+    public byte[] savedNotifiedSkillsList;
+
 		// INTERNAL
 		public Dictionary<string, int> savedWeaponData;
 		public Dictionary<DFCareer.MagicSkills, Dictionary<string, int>> savedSpellData;
@@ -45,6 +48,7 @@ namespace DaggerStats
 		public bool savedOwningShip;
 
 		// GENERAL
+		public uint savedPlayerStartDateMinute;
 		public uint savedDaysPassed;
 		public uint savedYearsPassed;
 		public uint savedHoursLoitered;
@@ -163,7 +167,7 @@ namespace DaggerStats
 		public Dictionary<DFCareer.MagicSkills, Dictionary<string, SpellCastTracker>> spellData;
 		public Dictionary<string, LocationVisitTracker> locationData;
 		public Dictionary<string, int> reputationData;
-		public bool openedDaggerStatsWindow = false;
+		public static bool openedDaggerStatsWindow = false;
 		public bool startedLoiteringCounter = false;
 		public uint startedLoitering;
 		public bool startedRestingCounter = false;
@@ -201,6 +205,7 @@ namespace DaggerStats
 		public bool talkingWithNPC = false;
 		
 		// GENERAL
+		public uint playerStartDateMinute;
 		public uint daysPassed;
 		public uint yearsPassed;
 		public uint hoursLoitered;
@@ -311,6 +316,7 @@ namespace DaggerStats
 	    {
 	        return new DaggerStatsSaveData
 	        {
+            savedNotifiedSkillsList = ViewableSkillProgressMain.notifiedSkillsList ?? new byte[35],
 	        	// INTERNAL
 	        	savedWeaponData = ConvertWeaponDataToSaveFormat(weaponData),
                 savedSpellData = ConvertSpellDataToSaveFormat(spellData),
@@ -323,8 +329,11 @@ namespace DaggerStats
                 savedOwningHouse = owningHouse,
                 savedOwningShip = owningShip,
                 savedActiveLoan = activeLoan,
+				savedVisitedRegions = visitedRegions,
 
 	        	// GENERAL
+				
+				savedPlayerStartDateMinute = playerStartDateMinute,
 	            savedDaysPassed = daysPassed,
 	            savedYearsPassed = yearsPassed,
 	            savedHoursLoitered = hoursLoitered,
@@ -429,6 +438,7 @@ namespace DaggerStats
 	    {
 	        return new DaggerStatsSaveData
 	        {
+            savedNotifiedSkillsList = ViewableSkillProgressMain.notifiedSkillsList ?? new byte[35],
 	        	// INTERNAL
 	        	savedWeaponData = ConvertWeaponDataToSaveFormat(weaponData),
                 savedSpellData = ConvertSpellDataToSaveFormat(spellData),
@@ -440,9 +450,11 @@ namespace DaggerStats
                 savedOwningHouse = owningHouse,
                 savedOwningShip = owningShip,
                 savedVisitedLibraries = visitedLibraries,
+				savedVisitedRegions = visitedRegions,
                 savedActiveLoan = activeLoan,
 
 	        	// GENERAL
+				savedPlayerStartDateMinute = playerStartDateMinute,
 	            savedDaysPassed = daysPassed,
 	            savedYearsPassed = yearsPassed,
 	            savedHoursLoitered = hoursLoitered,
@@ -545,12 +557,14 @@ namespace DaggerStats
 
 	    public void RestoreSaveData(object saveData)
 	    {
+			if (saveData == null) return;
 	        var daggerStatsSaveData = (DaggerStatsSaveData)saveData;
 
 	        // INTERNAL
 	        InitializeWeaponData(daggerStatsSaveData.savedWeaponData);
             InitializeSpellData(daggerStatsSaveData.savedSpellData);
             InitializeLocationData(daggerStatsSaveData.savedLocationData);
+			visitedRegions = daggerStatsSaveData.savedVisitedRegions ?? new List<int>();
             reputationData = daggerStatsSaveData.savedReputationData;
             totalTimeClimbing = daggerStatsSaveData.savedTotalTimeClimbing;
             totalTimeSwimming = daggerStatsSaveData.savedTotalTimeSwimming;
@@ -558,9 +572,10 @@ namespace DaggerStats
             activeLoan = daggerStatsSaveData.savedActiveLoan;
             owningHouse = daggerStatsSaveData.savedOwningHouse;
             owningShip = daggerStatsSaveData.savedOwningShip;
-            visitedLibraries = daggerStatsSaveData.savedVisitedLibraries;
+			visitedLibraries = daggerStatsSaveData.savedVisitedLibraries ?? new List<int>();
 
 	        // GENERAL
+			playerStartDateMinute = daggerStatsSaveData.savedPlayerStartDateMinute;
 	        daysPassed = daggerStatsSaveData.savedDaysPassed;
 	        yearsPassed = daggerStatsSaveData.savedYearsPassed;
 	        hoursLoitered = daggerStatsSaveData.savedHoursLoitered;
@@ -659,27 +674,49 @@ namespace DaggerStats
             treasonCount = daggerStatsSaveData.savedTreasonCount;
             trespassingCount = daggerStatsSaveData.savedTrespassingCount;
             vagrancyCount = daggerStatsSaveData.savedVagrancyCount;
-	    }
-
-	    // Converters for Spell/Weapon data dictionaries
-	    private void InitializeWeaponData(Dictionary<string, int> loadedSavedWeaponData)
-        {
-            weaponData = new Dictionary<string, WeaponUseTracker>(); 
-            if (loadedSavedWeaponData != null)
-            {
-                foreach (var pair in loadedSavedWeaponData)
-                {
-                    WeaponUseTracker tracker = new WeaponUseTracker(pair.Key);
-                    typeof(WeaponUseTracker).GetProperty("useCount").SetValue(tracker, pair.Value);
-                    weaponData.Add(pair.Key, tracker);
-                }
-                //Debug.Log($"[DaggerStats] Weapon data initialized with {weaponData.Count} entries from save.");
-            }
-            else
-            {
-                //Debug.Log("[DaggerStats] No saved weapon data, initializing empty weaponData dictionary.");
-            }
+	    ViewableSkillProgressMain.notifiedSkillsList = daggerStatsSaveData.savedNotifiedSkillsList ?? new byte[35];
         }
+    
+
+       	public static void OnStartGame(object sender, EventArgs e)
+		{
+    	 	if (Instance.playerStartDateMinute == 0)
+    		{
+        		InitializeBaselineStats();
+    		}
+		}
+
+        public static void OnLoadEvent(SaveData_v1 saveData)
+        {
+            if (Instance.playerStartDateMinute == 0 && GameManager.Instance.PlayerEntity != null && !SaveLoadManager.Instance.LoadInProgress)
+            {
+                InitializeBaselineStats();
+            }
+        }		public static void ResetWindowOpenState() 
+        { 
+            openedDaggerStatsWindow = false; 
+            }
+        public static void InitializeBaselineStats()
+        {
+            Instance.playerStartDateMinute = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
+            	GameManager.Instance.PlayerEffectManager.OnAssignBundle -= OnAssignBundle;
+            	GameManager.Instance.PlayerEffectManager.OnAssignBundle += OnAssignBundle;
+            
+            Debug.Log($"[StatsPlus] Baseline start time locked in at: {Instance.playerStartDateMinute}");
+        }
+	    private void InitializeWeaponData(Dictionary<string, int> loadedSavedWeaponData)
+		{
+    		weaponData = new Dictionary<string, WeaponUseTracker>();
+    			if (loadedSavedWeaponData != null)
+    	{
+        foreach (var pair in loadedSavedWeaponData)
+        {
+            WeaponUseTracker tracker = new WeaponUseTracker(pair.Key);
+            	tracker.useCount = pair.Value;
+            	weaponData.Add(pair.Key, tracker);
+        		}
+    		}
+		}
 
         private Dictionary<string, int> ConvertWeaponDataToSaveFormat(Dictionary<string, WeaponUseTracker> runtimeData)
         {
@@ -695,18 +732,18 @@ namespace DaggerStats
         }
 
         private void InitializeLocationData(Dictionary<string, int> loadedSavedLocationData)
-        {
-        	locationData = new Dictionary<string, LocationVisitTracker>();
-        	if (loadedSavedLocationData != null)
-        	{
+		{
+    		locationData = new Dictionary<string, LocationVisitTracker>();
+    		if (loadedSavedLocationData != null)
+    		{
         		foreach (var pair in loadedSavedLocationData)
         		{
-        			LocationVisitTracker tracker = new LocationVisitTracker(pair.Key);
-        			typeof(LocationVisitTracker).GetProperty("visitCount").SetValue(tracker, pair.Value);
-        			locationData.Add(pair.Key, tracker);
+            	LocationVisitTracker tracker = new LocationVisitTracker(pair.Key);
+            		tracker.visitCount = pair.Value;
+            			locationData.Add(pair.Key, tracker);
         		}
-        	}
-        }
+    		}
+		}
 
         private Dictionary<string, int> ConvertLocationDataToSaveFormat(Dictionary<string, LocationVisitTracker> runtimeData)
         {
@@ -722,30 +759,32 @@ namespace DaggerStats
         }
 
         private void InitializeSpellData(Dictionary<DFCareer.MagicSkills, Dictionary<string, int>> loadedSavedSpellData)
-        {
-            spellData = new Dictionary<DFCareer.MagicSkills, Dictionary<string, SpellCastTracker>>();
-            SetupSpellCount();
+		{
+    		spellData = new Dictionary<DFCareer.MagicSkills, Dictionary<string, SpellCastTracker>>();
+    			SetupSpellCount();
+   	 			if (loadedSavedSpellData != null)
+    		{
+        		foreach (var schoolPair in loadedSavedSpellData)
+        		{
+            		DFCareer.MagicSkills school = schoolPair.Key;
+            			Dictionary<string, int> savedInnerDict = schoolPair.Value;
+            			Dictionary<string, SpellCastTracker> runtimeInnerDict;
 
-            if (loadedSavedSpellData != null)
-            {
-                foreach (var schoolPair in loadedSavedSpellData)
-                {
-                    DFCareer.MagicSkills school = schoolPair.Key;
-                    Dictionary<string, int> savedInnerDict = schoolPair.Value;
-                    Dictionary<string, SpellCastTracker> runtimeInnerDict;
-
-                    if (spellData.TryGetValue(school, out runtimeInnerDict))
-                    {
-                        foreach (var spellPair in savedInnerDict)
-                        {
-                            SpellCastTracker tracker = new SpellCastTracker(spellPair.Key);
-                            typeof(SpellCastTracker).GetProperty("castCount").SetValue(tracker, spellPair.Value);
-                            runtimeInnerDict.Add(spellPair.Key, tracker);
-                        }
-                    }
-                }
-            }
-        }
+            	if (spellData.TryGetValue(school, out runtimeInnerDict))
+            		{
+                if (savedInnerDict != null) 
+                	{
+                    	foreach (var spellPair in savedInnerDict)
+                    	{
+                        SpellCastTracker tracker = new SpellCastTracker(spellPair.Key);
+                        	tracker.castCount = spellPair.Value;
+                        	runtimeInnerDict.Add(spellPair.Key, tracker);
+                    		}
+                		}
+            		}
+        		}
+    		}	
+		}
 
         private Dictionary<DFCareer.MagicSkills, Dictionary<string, int>> ConvertSpellDataToSaveFormat(Dictionary<DFCareer.MagicSkills, Dictionary<string, SpellCastTracker>> runtimeData)
         {
@@ -782,8 +821,11 @@ namespace DaggerStats
 			mod.SaveDataInterface = instance;
 
 			// StreamingWorld.OnTeleportToCoordinates += OnTeleportToCoordinates;
+			StartGameBehaviour.OnStartGame += OnStartGame;
+            SaveLoadManager.OnLoad += OnLoadEvent;
 			EnemyDeath.OnEnemyDeath += OnEnemyDeath;
 			PlayerGPS.OnMapPixelChanged += OnMapPixelChanged;
+			PlayerEnterExit.OnTransitionInterior += OnInteriorTransition;
 			GameManager.Instance.PlayerEffectManager.OnAssignBundle += OnAssignBundle;
 			QuestMachine.OnQuestEnded += OnQuestEnded;
 			QuestMachine.OnQuestErrorTermination += OnQuestEnded;
@@ -794,7 +836,6 @@ namespace DaggerStats
 			DaggerfallBankManager.OnSellShip += OnSellShip;
 			DaggerfallBankManager.OnWithdrawGold += OnWithdrawGold;
 	    }
-		
 	    void Awake()
 	    {
     		SetupWeaponCount();
@@ -804,51 +845,53 @@ namespace DaggerStats
     		SetupQuestFactionIdLists();
     		//SetupVisitedRegions();
     		//SetupReputations();
-	    }
+	        }
 
 	    void Update()
 	    {
-	    	// DaggerStats Window
-	    	if (Input.GetKey(KeyCode.X) && openedDaggerStatsWindow == false && DaggerfallUI.Instance.UserInterfaceManager.TopWindow as DaggerfallCharacterSheetWindow != null)
-	    	{
-	    		uint now = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
+            if (DaggerfallUI.Instance != null && DaggerfallUI.Instance.UserInterfaceManager != null)
+            {
+            if (Input.GetKeyDown(KeyCode.X) && !openedDaggerStatsWindow && 
+                DaggerfallUI.Instance.UserInterfaceManager.TopWindow is DaggerfallCharacterSheetWindow)
+               {
+            uint now = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
 
-	    		// Calculations necessary just before opening the window
-	    		daysPassed = CalculateDaysPassed();
-	    		yearsPassed = CalculateYearsPassed(daysPassed);
-	    		longestCrashSession = CalculateLongestCrashSession();
-	    		favoritePlace = GetMostVisitedLocation();
-	    		CalculateTimeSpentAsLycanthope(now);
-	    		CalculateTimeSpentAsVampire(now);
-	    		CalculateClimbingSwimmingLevitatingTimes();
-	    		CalculateRegionsVisited();
-	    		CalculateAccountTotal();
-	    		CalculateHousesOwned();
-	    		CalculateShipsOwned();
-	    		CalculateLibrariesVisited();
-	    		// CalculateReputations();
-	    		GetMainQuestsCompleted();
-	    		SpellCount();
+        // Calculations necessary just before opening the window
+            daysPassed = CalculateDaysPassed();
+            yearsPassed = CalculateYearsPassed(daysPassed);
+            longestCrashSession = CalculateLongestCrashSession();
+            favoritePlace = GetMostVisitedLocation();
+            CalculateTimeSpentAsLycanthrope(now);
+            CalculateTimeSpentAsVampire(now);
+            CalculateClimbingSwimmingLevitatingTimes();
+            CalculateRegionsVisited();
+            CalculateAccountTotal();
+            CalculateHousesOwned();
+            CalculateShipsOwned();
+            CalculateLibrariesVisited();
+        // CalculateReputations();
+            GetMainQuestsCompleted();
+            SpellCount();
 
-	    		// Open the window
-	    		OpenStatsWindow();
-	    		openedDaggerStatsWindow = true;
-	    	}
-
+        // Open the window
+            OpenStatsWindow();
+            openedDaggerStatsWindow = true;
+            }
+            }
 	    	// Loitering Checks
 	    	if (startedLoiteringCounter == false && GameManager.Instance.PlayerEntity.IsLoitering)
 	    	{
 	    		startedLoitering = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
 	    		startedLoiteringCounter = true;
-	    		//Debug.Log("[DaggerStats] startedLoitering time:" + startedLoitering);
+	    		//Debug.Log("[StatsPlus] startedLoitering time:" + startedLoitering);
 	    	}
 
 	    	if (startedLoiteringCounter == true && !GameManager.Instance.PlayerEntity.IsLoitering)
 	    	{
 	    		uint stoppedLoitering = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
 	    		uint hoursSpentLoitering = (stoppedLoitering - startedLoitering) / 60;
-	    		//Debug.Log("[DaggerStats] stopped loitering time: " + stoppedLoitering);
-	    		//Debug.Log("[DaggerStats] hoursSpentLoitering: " + hoursSpentLoitering);
+	    		//Debug.Log("[StatsPlus] stopped loitering time: " + stoppedLoitering);
+	    		//Debug.Log("[StatsPlus] hoursSpentLoitering: " + hoursSpentLoitering);
 	    		hoursLoitered += hoursSpentLoitering;
 
 	    		startedLoiteringCounter = false;
@@ -1021,11 +1064,11 @@ namespace DaggerStats
 	    				weaponName = weapon.MetalType + " " + currentRightHand.shortName;
 	    			}
 
-	    			//Debug.Log("[DaggerStats] Weapon used: " + weaponName);
+	    			//Debug.Log("[StatsPlus] Weapon used: " + weaponName);
 	    			RecordWeaponUse(weaponName);
 
 	    			favoriteWeapon = GetMostUsedWeapon();
-	    			//Debug.Log("[DaggerStats] Favorite weapon: " + favoriteWeapon);
+	    			//Debug.Log("[StatsPlus] Favorite weapon: " + favoriteWeapon);
 
 	    		}
 	    	}
@@ -1039,7 +1082,7 @@ namespace DaggerStats
 	    	if (spellCastCounter == false && GameManager.Instance.PlayerSpellCasting.IsPlayingAnim == true )
 	    	{
 
-	    		//Debug.Log("[DaggerStats] Casting a spell.");
+	    		//Debug.Log("[StatsPlus] Casting a spell.");
 	    		EntityEffectBundle lastSpell = playerEffectManager.ReadySpell;
 	    		
 	    		if (lastSpell != null && lastSpell.Settings.Effects != null && lastSpell.Settings.Effects.Length > 0)
@@ -1110,30 +1153,29 @@ namespace DaggerStats
 
 	    // Calculations
 	    public uint CalculateDaysPassed()
-		{
-			uint classicGameStartTime = 523530 / 1440; // 523530 is the in-game minute of the canonical game start time
-			uint minutesPassed = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
-			
-			minutesPassed = minutesPassed / 1440;
-			minutesPassed = minutesPassed - classicGameStartTime;
-			daysPassed = minutesPassed;
-
-			if (daysPassed >= 0)
-			{
-				return daysPassed;
-			}
-			return 0;
-		}
+        {
+            uint startDayInMinutes = Instance.playerStartDateMinute;
+            uint minutesPassed = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
+                if (minutesPassed >= startDayInMinutes)
+            {
+            daysPassed = (minutesPassed - startDayInMinutes) / 1440;
+            }
+            else
+            {
+            daysPassed = 0;
+        	}
+        return daysPassed;
+     	}
 
 		public uint CalculateYearsPassed(uint daysToCheck)
 		{
 			yearsPassed = daysToCheck / 365;
 
-			if (yearsPassed < 1)
+			    if (yearsPassed < 1)
 			{
-				return 0;
+			return 0;
 			}
-			return yearsPassed;
+		return yearsPassed;
 		}
 
 		public uint CalculateLongestCrashSession()
@@ -1147,11 +1189,11 @@ namespace DaggerStats
 			return maxValue;
 		}
 
-		public void CalculateTimeSpentAsLycanthope(uint currentDay)
+		public void CalculateTimeSpentAsLycanthrope(uint currentDay)
 		{
 			if (currentDay == startedLycanthropy)
 			{
-				daysAsLycanthrope = 1;
+				daysAsLycanthrope = 0;
 			}
 			else if (startedLycanthropy != 0)
 			{
@@ -1167,7 +1209,7 @@ namespace DaggerStats
 		{
 			if (currentDay == startedVampirism)
 			{
-				daysAsVampire = 1;
+				daysAsVampire = 0;
 			}
 			else if (startedVampirism != 0)
 			{
@@ -1175,7 +1217,7 @@ namespace DaggerStats
 			}
 			else
 			{
-				daysAsLycanthrope = 0;
+				daysAsVampire = 0;
 			}
 		}
 
@@ -1185,76 +1227,6 @@ namespace DaggerStats
 			Instance.timeSpentSwimming = GetFormattedTime(Instance.totalTimeSwimming);
 			Instance.timeSpentLevitating = GetFormattedTime(Instance.totalTimeLevitating);
 		}
-
-    	// public void SetupVisitedRegions()
-    	// {
-    	// 	visitedRegions = new List<int>();
-    	// }
-
-    	// public void SetupReputations()
-    	// {
-    	// 	reputationData = new Dictionary<string,int>();
-    	// 	MapsFile mapsFile = new MapsFile();
-    	// 	PersistentFactionData factionData = new PersistentFactionData();
-    	// 	DFRegion dfRegion;
-    	// 	string regionName;
-    	// 	int regionRep;
-    	// 	Debug.Log($"[DaggerStats] setup reputation data");
-
-    	// 	foreach (int region in visitedRegions)
-    	// 	{
-    	// 		Debug.Log($"[DaggerStats] Checking Region # {region}");
-    	// 		dfRegion = mapsFile.GetRegion(region);
-    	// 		Debug.Log($"[DaggerStats] Region is {dfRegion}");
-    	// 		regionName = dfRegion.Name;
-    	// 		Debug.Log($"[DaggerStats] Region Name is {regionName}");
-    	// 		regionRep = (int)factionData.GetReputation(region);
-    	// 		Debug.Log($"[DaggerStats] Region Rep is {regionRep}");
-
-    	// 		Debug.Log($"[DaggerStats] Adding {regionName} with rep of {regionRep} to reputationData");
-    	// 		reputationData.Add(regionName, regionRep);
-    	// 	}
-    	// }
-
-    	// public void CalculateReputations()
-    	// {
-    	// 	SetupReputations(); // force setup because visitedRegions is too slow to populate
-
-    	// 	List<int> valueList = new List<int>();
-    	// 	string bestReputationLocation = "None";
-    	// 	string worstReputationLocation = "None";
-    	// 	int bestReputationValue;
-    	// 	int worstReputationValue;
-
-    	// 	foreach (var pair in reputationData)
-    	// 	{
-    	// 		valueList.Add(pair.Value);
-    	// 	}
-
-    	// 	if (valueList.Count > 0)
-    	// 	{
-    	// 		bestReputationValue = valueList.Max();
-    	// 		worstReputationValue = valueList.Min();
-
-    	// 		foreach (var pair in reputationData)
-    	// 		{
-    	// 			if (pair.Value == bestReputationValue)
-    	// 			{
-    	// 				bestReputationLocation = pair.Key;
-    	// 			}
-    	// 			if (pair.Value == worstReputationValue)
-    	// 			{
-    	// 				worstReputationLocation = pair.Key;
-    	// 			}
-    	// 		}
-
-    	// 		Debug.Log($"[DaggerStats] Best Reputation is {bestReputationLocation} with {bestReputationValue}");
-    	// 		Debug.Log($"[DaggerStats] Worst Reputation is {worstReputationLocation} with {worstReputationValue}");
-    	// 		Instance.bestReputation = bestReputationLocation + " (" + bestReputationValue.ToString() + ")";
-    	// 		Instance.worstReputation = worstReputationLocation + " (" + worstReputationValue.ToString() + ")";
-    	// 	}
-    	// }
-
     	public void CalculateAccountTotal()
     	{
     		Instance.totalAccountBalance = 0;
@@ -1309,7 +1281,7 @@ namespace DaggerStats
 
     	public static void OnDepositGold(TransactionType type, TransactionResult result, int amount)
     	{
-    		//Debug.Log($"[DaggerStats] gold deposit: {type} {result} {amount}");
+    		//Debug.Log($"[StatsPlus] gold deposit: {type} {result} {amount}");
     		if (result == TransactionResult.NONE)
     		{
     			if (type == TransactionType.Depositing_gold)
@@ -1321,7 +1293,7 @@ namespace DaggerStats
 
     	public static void OnWithdrawGold(TransactionType type, TransactionResult result, int amount)
     	{
-    		//Debug.Log($"[DaggerStats] gold withdrawal: {type} {result} {amount}");
+    		//Debug.Log($"[StatsPlus] gold withdrawal: {type} {result} {amount}");
     		if (result == TransactionResult.NONE)
     		{
     			if (type == TransactionType.Withdrawing_gold)
@@ -1333,7 +1305,7 @@ namespace DaggerStats
 
     	public static void OnBorrowLoan(TransactionType type, TransactionResult result, int amount)
     	{
-    		//Debug.Log($"[DaggerStats] Loan borrowing: {type} {result} {amount}");
+    		//Debug.Log($"[StatsPlus] Loan borrowing: {type} {result} {amount}");
     		if (result == TransactionResult.NONE)
     		{
     			if (type == TransactionType.Borrowing_loan)
@@ -1347,7 +1319,7 @@ namespace DaggerStats
 
     	public static void OnRepayLoan(TransactionType type, TransactionResult result, int amount)
     	{
-    		Debug.Log($"[Stats+] Loan repaying: {type} {result} {Instance.activeLoan}");
+    		Debug.Log($"[StatsPlus] Loan repaying: {type} {result} {Instance.activeLoan}");
     		if (result == TransactionResult.NONE)
     		{
     			if (type == TransactionType.Repaying_loan || type == TransactionType.Repaying_loan_from_account)
@@ -1362,7 +1334,7 @@ namespace DaggerStats
 
     	public static void OnSellHouse(TransactionType type, TransactionResult result, int amount)
     	{
-    		//Debug.Log($"[DaggerStats] house selling: {type} {result} {amount}");
+    		//Debug.Log($"[StatsPlus] house selling: {type} {result} {amount}");
     		if (result == TransactionResult.NONE)
     		{
     			if (type == TransactionType.Sell_house)
@@ -1376,7 +1348,7 @@ namespace DaggerStats
 
     	public static void OnSellShip(TransactionType type, TransactionResult result, int amount)
     	{
-    		//Debug.Log($"[DaggerStats] ship selling: {type} {result} {amount}");
+    		//Debug.Log($"[StatsPlus] ship selling: {type} {result} {amount}");
     		if (result == TransactionResult.NONE)
     		{
     			if (type == TransactionType.Sell_ship)
@@ -1392,7 +1364,7 @@ namespace DaggerStats
     	// {
     	// 	if (worldPos != null)
 		// 	{
-		// 		Debug.Log($"[DaggerStats] Player teleported.");
+		// 		Debug.Log($"[StatsPlus] Player teleported.");
 		// 	    Instance.teleportations++;
 		// 	}
     		
@@ -1483,30 +1455,28 @@ namespace DaggerStats
 			// Capitals
 
 			// LocationTypes
-            CheckLocationTypeData();
-
 		}
 
 		public static void OnAssignBundle(LiveEffectBundle bundleAdded)
 		{
 			if (bundleAdded.bundleType == BundleTypes.Disease)
 			{
-				//Debug.Log($"[DaggerStats] Bundle is a disease from: {bundleAdded.casterEntityType}.");
+				//Debug.Log($"[StatsPlus] Bundle is a disease from: {bundleAdded.casterEntityType}.");
 				if (bundleAdded.casterEntityType == EntityTypes.Player)
 				{
 					Instance.diseasesContracted++;
-					//Debug.Log($"[DaggerStats] Contracted new disease, incrementing to: {Instance.diseasesContracted}");
+					//Debug.Log($"[StatsPlus] Contracted new disease, incrementing to: {Instance.diseasesContracted}");
 				}	
 			}
 			else
 			{
-				//Debug.Log($"[DaggerStats] Bundle is not a disease.");
+				//Debug.Log($"[StatsPlus] Bundle is not a disease.");
 			}
 		}
 
 		public static void OnQuestEnded(Quest quest)
 		{
-			//Debug.Log($"[DaggerStats] Quest Ended. Quest is: {quest.DisplayName} and the faction ID is {quest.FactionId}");
+			//Debug.Log($"[StatsPlus] Quest Ended. Quest is: {quest.DisplayName} and the faction ID is {quest.FactionId}");
 
 			if (quest != null)
 			{
@@ -1517,7 +1487,7 @@ namespace DaggerStats
 			}
 			else
 			{
-				Debug.LogWarning($"[Stats+] {quest.DisplayName} not found in any list!");
+				Debug.LogWarning($"[StatsPlus] {quest.DisplayName} not found in any list!");
 			}
 		}
 
@@ -1527,13 +1497,13 @@ namespace DaggerStats
 
 			if (Instance.visitedRegions.Contains(regionIndex))
 			{
-				//Debug.Log($"[DaggerStats] Region already visited {regionIndex}");
+				//Debug.Log($"[StatsPlus] Region already visited {regionIndex}");
 				return;
 			}
 			else
 			{
 				Instance.visitedRegions.Add(regionIndex);
-				//Debug.Log($"[DaggerStats] Adding {regionIndex} to list of visited Regions");
+				//Debug.Log($"[StatsPlus] Adding {regionIndex} to list of visited Regions");
 			}
 		}
 
@@ -1542,49 +1512,45 @@ namespace DaggerStats
 		public static void CheckLibraryData()
 		{
 			int libraryID = GameManager.Instance.PlayerEnterExit.BuildingDiscoveryData.buildingKey;
-			// Debug.Log($"[DaggerStats] the ID is {libraryID} and visitedLibraries is {Instance.visitedLibraries}");
+			// Debug.Log($"[StatsPlus] the ID is {libraryID} and visitedLibraries is {Instance.visitedLibraries}");
 
 			if (Instance.visitedLibraries.Contains(libraryID))
 			{
-				//Debug.Log($"[DaggerStats] Library already visited {libraryID}");
+				//Debug.Log($"[StatsPlus] Library already visited {libraryID}");
 				return;
 			}
 			else
 			{
 				Instance.visitedLibraries.Add(libraryID);
-				//Debug.Log($"[DaggerStats] New Library Card: {libraryID} ");
+				//Debug.Log($"[StatsPlus] New Library Card: {libraryID} ");
 			}
 		}
 
-		public static void CheckLocationTypeData()
-		{
-			DFLocation dfLocation = GameManager.Instance.PlayerGPS.CurrentLocation;
-			int mapPixelID = MapsFile.GetMapPixelIDFromLongitudeLatitude((int)dfLocation.MapTableData.Longitude, dfLocation.MapTableData.Latitude);
-
-			// Record each location visit
-			Instance.RecordLocationVisit();
-
-			if (GameManager.Instance.PlayerGPS.HasDiscoveredLocation(mapPixelID))
-            {
-                //Debug.Log($"[DaggerStats] This location has already been discovered.");
-                return;
-            }
+		public static void OnInteriorTransition(PlayerEnterExit.TransitionEventArgs args)
+        {
+            DFLocation dfLocation = GameManager.Instance.PlayerGPS.CurrentLocation;
+                string locationName = dfLocation.Name;
+            if (string.IsNullOrEmpty(locationName)) return;
+                if (!Instance.locationData.ContainsKey(locationName))
+                {
+            Instance.RecordLocationVisit(); // Add it to the dictionary
+                IncrementLocationVisited();     // Increment the specific Stats+ counters
+                }
             else
             {
-            	IncrementLocationVisited();
+            Instance.RecordLocationVisit();
             }
-		}
-
+        }
 		public static void CheckMainQuestCompletion(Quest quest)
 		{
 			foreach (string name in Instance.mainQuestNames)
 			{
-				//Debug.Log($"[DaggerStats] Checking Name {name}");
+				//Debug.Log($"[StatsPlus] Checking Name {name}");
 				if (quest.DisplayName == name)
 				{
 					if (GameManager.Instance.QuestMachine.IsQuestComplete(quest.UID))
 					{
-						//Debug.Log($"[DaggerStats] Adding {name} with UID: {quest.UID}");
+						//Debug.Log($"[StatsPlus] Adding {name} with UID: {quest.UID}");
 						Instance.mainQuestIDs.Add(quest.UID);
 						Instance.isMainQuest = true;
 					}
@@ -1596,7 +1562,7 @@ namespace DaggerStats
         {
             if (GameManager.Instance.StreamingWorld.PlayerTileMapIndex == 0)
             {
-                return; // Doesn't count if you fall above water.
+                return;
             }
             
             Transform playerTransform = GameManager.Instance.PlayerMotor.smoothFollower;
@@ -1753,7 +1719,6 @@ namespace DaggerStats
 
 		public void SetupQuestFactionIdLists()
 		{
-			// This might be the ugliest thing I've ever written. I'm sorry.
 			//   People             Court         Specific Nobles
 			peopleOf.Add(194); courtOf.Add(195); courtOf.Add(242);
 			peopleOf.Add(198); courtOf.Add(244); courtOf.Add(352);
@@ -1853,27 +1818,25 @@ namespace DaggerStats
 				
 			}
 		}
-
-		public static void IncrementLocationVisited()
-		{
-			DFLocation dfLocation = GameManager.Instance.PlayerGPS.CurrentLocation;
-			DFRegion.LocationTypes locationType = dfLocation.MapTableData.LocationType;
-
-			if (locationType == DFRegion.LocationTypes.TownCity) { Instance.townsVisited++; } 
-			if (locationType == DFRegion.LocationTypes.TownHamlet) { Instance.townsVisited++; }
-			if (locationType == DFRegion.LocationTypes.TownVillage) { Instance.townsVisited++; }
-			if (locationType == DFRegion.LocationTypes.Tavern) { Instance.townsVisited++; }
-			if (locationType == DFRegion.LocationTypes.HomeFarms) { Instance.homesVisited++; }
-			if (locationType == DFRegion.LocationTypes.HomePoor) { Instance.homesVisited++; } 
-			if (locationType == DFRegion.LocationTypes.HomeWealthy) { Instance.homesVisited++; }
-			if (locationType == DFRegion.LocationTypes.DungeonKeep) { Instance.dungeonsVisited++; }
-			if (locationType == DFRegion.LocationTypes.DungeonLabyrinth) { Instance.dungeonsVisited++; }
-			if (locationType == DFRegion.LocationTypes.DungeonRuin) { Instance.dungeonsVisited++; } 
-			if (locationType == DFRegion.LocationTypes.Graveyard) { Instance.dungeonsVisited++; }
-			if (locationType == DFRegion.LocationTypes.ReligionTemple) { Instance.templesVisited++; } 
-			if (locationType == DFRegion.LocationTypes.ReligionCult) { Instance.templesVisited++; }
-		}
-
+       
+        public static void IncrementLocationVisited()
+        {
+            DFLocation dfLocation = GameManager.Instance.PlayerGPS.CurrentLocation;
+            DFRegion.LocationTypes locationType = dfLocation.MapTableData.LocationType;
+                if (locationType == DFRegion.LocationTypes.TownCity) { Instance.townsVisited++; } 
+                if (locationType == DFRegion.LocationTypes.TownHamlet) { Instance.townsVisited++; }
+                if (locationType == DFRegion.LocationTypes.TownVillage) { Instance.townsVisited++; }
+                if (locationType == DFRegion.LocationTypes.Tavern) { Instance.townsVisited++; }
+              	if (locationType == DFRegion.LocationTypes.HomeFarms) { Instance.homesVisited++; }
+            	if (locationType == DFRegion.LocationTypes.HomePoor) { Instance.homesVisited++; } 
+            	if (locationType == DFRegion.LocationTypes.HomeWealthy) { Instance.homesVisited++; }
+    			if (locationType == DFRegion.LocationTypes.DungeonKeep) { Instance.dungeonsVisited++; }
+    			if (locationType == DFRegion.LocationTypes.DungeonLabyrinth) { Instance.dungeonsVisited++; }
+    			if (locationType == DFRegion.LocationTypes.DungeonRuin) { Instance.dungeonsVisited++; } 
+    			if (locationType == DFRegion.LocationTypes.Graveyard) { Instance.dungeonsVisited++; }
+    			if (locationType == DFRegion.LocationTypes.ReligionTemple) { Instance.templesVisited++; } 
+    			if (locationType == DFRegion.LocationTypes.ReligionCult) { Instance.templesVisited++; }
+				}
 		public void SpellCount()
 		{
 			PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
@@ -1892,20 +1855,20 @@ namespace DaggerStats
 				if (schoolSpells.TryGetValue(spellEffectKey, out tracker))
 				{
 					tracker.IncrementCastCount();
-					//Debug.Log($"[DaggerStats] Incremented {spellEffectKey} for {magicSchool}. New count: {tracker.castCount}");
+					//Debug.Log($"[StatsPlus] Incremented {spellEffectKey} for {magicSchool}. New count: {tracker.castCount}");
 				}
 				else
 				{
 					SpellCastTracker newTracker = new SpellCastTracker(spellEffectKey);
 					newTracker.IncrementCastCount();
 					schoolSpells.Add(spellEffectKey, newTracker);
-					//Debug.Log($"[DaggerStats] Added new spell {spellEffectKey} to {magicSchool}. Count: {newTracker.castCount}");
+					//Debug.Log($"[StatsPlus] Added new spell {spellEffectKey} to {magicSchool}. Count: {newTracker.castCount}");
 				}
 			}
 			else
 	        {
 	            // This should ideally not happen if InitializeSpellAnalytics covers all schools.
-	            Debug.LogWarning($"[Stats+] Attempted to record spell for uninitialized magic school: {magicSchool}");
+	            Debug.LogWarning($"[StatsPlus] Attempted to record spell for uninitialized magic school: {magicSchool}");
 	        }
 		}
 
@@ -1915,14 +1878,14 @@ namespace DaggerStats
 			if (weaponData.TryGetValue(weaponUsed, out tracker))
 			{
 				tracker.IncrementUseCount();
-				//Debug.Log($"[DaggerStats] Incremented {weaponUsed} to {tracker.useCount}");
+				//Debug.Log($"[StatsPlus] Incremented {weaponUsed} to {tracker.useCount}");
 			}
 			else
 			{
 				WeaponUseTracker newTracker = new WeaponUseTracker(weaponUsed);
 				newTracker.IncrementUseCount();
 				weaponData.Add(weaponUsed, newTracker);
-				//Debug.Log($"[DaggerStats] Added {weaponUsed} to weaponData. Count: {newTracker.useCount}");
+				//Debug.Log($"[StatsPlus] Added {weaponUsed} to weaponData. Count: {newTracker.useCount}");
 			}
 		}
 
@@ -1939,14 +1902,14 @@ namespace DaggerStats
 			if (locationData.TryGetValue(locationName, out tracker))
 			{
 				tracker.IncrementVisitCount();
-				//Debug.Log($"[DaggerStats] Incremented {locationName} to {tracker.visitCount}");
+				//Debug.Log($"[StatsPlus] Incremented {locationName} to {tracker.visitCount}");
 			}
 			else
 			{
 				LocationVisitTracker newTracker = new LocationVisitTracker(locationName);
 				newTracker.IncrementVisitCount();
 				locationData.Add(locationName, newTracker);
-				//Debug.Log($"[DaggerStats] Added {locationName} to locationData. Count: {newTracker.visitCount}");
+				//Debug.Log($"[StatsPlus] Added {locationName} to locationData. Count: {newTracker.visitCount}");
 			}
 		}
 
@@ -2063,7 +2026,7 @@ namespace DaggerStats
 		public class SpellCastTracker
 		{
 			public string spellEffectKey { get; private set; }
-			public int castCount { get; private set; }
+			public int castCount { get; set; }
 
 			public SpellCastTracker(string SpellEffectKey)
 			{
@@ -2080,7 +2043,7 @@ namespace DaggerStats
 		public class WeaponUseTracker
 		{
 			public string weaponName { get; private set; }
-			public int useCount { get; private set; }
+			public int useCount { get; set; }
 
 			public WeaponUseTracker(string WeaponName)
 			{
@@ -2097,7 +2060,7 @@ namespace DaggerStats
 		public class LocationVisitTracker
 		{
 			public string locationName { get; private set; }
-			public int visitCount { get; private set; }
+			public int visitCount { get; set; }
 
 			public LocationVisitTracker(string LocationName)
 			{

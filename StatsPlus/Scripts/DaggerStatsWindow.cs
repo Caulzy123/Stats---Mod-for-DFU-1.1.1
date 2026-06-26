@@ -1,4 +1,4 @@
-using DaggerStats;
+using StatsPlus;
 using DaggerfallWorkshop;
 using DaggerfallWorkshop.Game;
 using DaggerfallWorkshop.Game.Entity;
@@ -17,7 +17,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace DaggerStats
+namespace StatsPlus
 {
     public class DaggerStatsWindow : DaggerfallPopupWindow
     {
@@ -47,7 +47,7 @@ namespace DaggerStats
         #region Constructors
         public DaggerStatsWindow(IUserInterfaceManager uiManager) : base(uiManager)
         {
-            ParentPanel.BackgroundColor = Color.clear; // clear for final
+            ParentPanel.BackgroundColor = Color.clear;
         }
         #endregion
 
@@ -63,11 +63,11 @@ namespace DaggerStats
             if (textureLoaded && baseTexture != null)
             {
                 baseTexture.filterMode = FilterMode.Point;
-                //Debug.Log("[DaggerStats] Successfully loaded texture: " + baseTextureName);
+                //Debug.Log("[StatsPlus] Successfully loaded texture: " + baseTextureName);
             }
             else
             {
-                Debug.LogError("[Stats+] FAILED to load texture: " + baseTextureName + ". Check path and filename.");
+                Debug.LogError("[StatsPlus] FAILED to load texture: " + baseTextureName + ". Check path and filename.");
             }
 
             // Main Panel
@@ -131,12 +131,12 @@ namespace DaggerStats
                 float labelWidth = xOffsetValue - xOffsetLabel - 5;
                 if (labelWidth <= 0)
                 {
-                    Debug.LogWarning($"[Stats+] Calculated statLabel width is too small or negative ({labelWidth}). Defaulting to 100.");
+                    Debug.LogWarning($"[StatsPlus] Calculated statLabel width is too small or negative ({labelWidth}). Defaulting to 100.");
                     labelWidth = 100;
                 }
                 statLabel.Size = new Vector2(labelWidth, lineHeight);
 
-                //Debug.Log($"[DaggerStats] AddStatLine: Label='{label}', Pos={statLabel.Position}, Size={statLabel.Size}");
+                //Debug.Log($"[StatsPlus] AddStatLine: Label='{label}', Pos={statLabel.Position}, Size={statLabel.Size}");
                 scrollingPanel.Components.Add(statLabel);
 
 
@@ -148,13 +148,13 @@ namespace DaggerStats
                 float valueWidth = scrollingPanel.Size.x - xOffsetValue - 5;
                 if (valueWidth <= 0)
                 {
-                    Debug.LogWarning($"[Stats+] Calculated statValue width is too small or negative ({valueWidth}). Defaulting to 100.");
+                    Debug.LogWarning($"[StatsPlus] Calculated statValue width is too small or negative ({valueWidth}). Defaulting to 100.");
                     valueWidth = 100;
                 }
                 statValue.Size = new Vector2(valueWidth, lineHeight);
                 scrollingPanel.Components.Add(statValue);
 
-                //Debug.Log($"[DaggerStats] AddStatLine: Value='{value}', Pos={statValue.Position}, Size={statValue.Size}");
+                //Debug.Log($"[StatsPlus] AddStatLine: Value='{value}', Pos={statValue.Position}, Size={statValue.Size}");
                 currentY += lineHeight;
             };
 
@@ -167,7 +167,7 @@ namespace DaggerStats
                 float valueWidth = scrollingPanel.Size.x - xOffsetValue - 5;
                 if (valueWidth <= 0)
                 {
-                    Debug.LogWarning($"[Stats+] Calculated statValue width is too small or negative ({valueWidth}). Defaulting to 100.");
+                    Debug.LogWarning($"[StatsPlus] Calculated statValue width is too small or negative ({valueWidth}). Defaulting to 100.");
                     valueWidth = 100;
                 }
                 spacerValue.Size = new Vector2(valueWidth, lineHeight);
@@ -335,12 +335,10 @@ namespace DaggerStats
         {}
         #endregion
         DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
-        // Route the physical click through the ESC key logic
         }
         public override void CancelWindow()
         {
-        // Reset the gatekeeper boolean so the window can be opened again later
-        DaggerStatsMain.Instance.openedDaggerStatsWindow = false;
+        DaggerStatsMain.openedDaggerStatsWindow = false;
         base.CancelWindow();
         
         }
@@ -349,7 +347,7 @@ namespace DaggerStats
         {
             DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             CloseWindow();
-            DaggerStatsMain.Instance.openedDaggerStatsWindow = false;
+            DaggerStatsMain.openedDaggerStatsWindow = false;
         }
 
         private void Scroller_OnScroll()

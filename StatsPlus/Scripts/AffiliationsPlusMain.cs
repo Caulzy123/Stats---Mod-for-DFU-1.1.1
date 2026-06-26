@@ -17,14 +17,13 @@ using System.Reflection;
 using System.Collections.Generic;
 
 
-namespace AffiliationsPlus
+namespace StatsPlus
 {
     public class AffiliationsPlusMain : MonoBehaviour
 	{
 		private static Mod mod;
 		private static AffiliationsPlusMain instance;
 		public static AffiliationsPlusMain Instance { get; private set; }
-        // Hotkey state is static so AffiliationsPlusWindow can reset it without needing a live instance reference.
         public static bool openedAffiliationsPlusWindow = false;
         public static List<TextFile.Token> guildsAndLocalsTokens = new List<TextFile.Token>();
         public static List<TextFile.Token> religiousTokens = new List<TextFile.Token>();
@@ -51,7 +50,7 @@ namespace AffiliationsPlus
 		[Invoke(StateManager.StateTypes.Start, -1)]
 	    public static void Init(InitParams initParams)
 	    {
-            instance = new GameObject("AffiliationsPlus").AddComponent<AffiliationsPlusMain>();
+            instance = new GameObject("StatsPlus").AddComponent<AffiliationsPlusMain>();
             Instance = instance;
 	    	mod = initParams.Mod;
             // Tab Formatting
@@ -92,14 +91,14 @@ namespace AffiliationsPlus
 
             if (factionFile == null)
             {
-                Debug.LogError("[Stats+] FactionFile not available. Cannot process any additional factions.");
+                Debug.LogError("[StatsPlus] FactionFile not available. Cannot process any additional factions.");
                 return;
             }
 
             // Mod Settings
             mod.LoadSettingsCallback = LoadSettings;
 
-	    	Debug.Log($"[Stats+] Started with Shift+A keybind for Affiliations menu.");
+	    	Debug.Log($"[StatsPlus] Started with Shift+A keybind for Affiliations menu.");
 	    }
 
         private static void LoadSettings(ModSettings modSettings, ModSettingsChange change)
@@ -145,8 +144,7 @@ namespace AffiliationsPlus
 
             UserInterfaceManager uiManager = DaggerfallUI.Instance.UserInterfaceManager;
             AffiliationsPlusWindow affiliationsWindow = new AffiliationsPlusWindow(DaggerfallUI.UIManager);
-            // AllowCancel must remain true so ESC reaches AffiliationsPlusWindow.CancelWindow().
-            affiliationsWindow.AllowCancel = true;
+            affiliationsPlusWindow.AllowCancel = true;
             uiManager.PushWindow(affiliationsWindow);
         }
 
@@ -194,17 +192,24 @@ namespace AffiliationsPlus
             guildsAndLocalsTokens.Add(new TextFile.Token() { text = "Reputation", formatting = TextFile.Formatting.TextHighlight });
             guildsAndLocalsTokens.Add(TextFile.NewLineToken);
 
-            if (GameManager.Instance.PlayerGPS != null)
+                        if (GameManager.Instance.PlayerGPS != null)
             {
                 string currentRegionName = GameManager.Instance.PlayerGPS.CurrentRegion.Name;
-                //Debug.Log($"[Stats+] Raw Current Region Name: '{currentRegionName}'");
+                if (string.IsNullOrEmpty(currentRegionName) || currentRegionName == "None")
+                {
+                    guildsAndLocalsTokens.Add(TextFile.CreateTextToken("Initializing Wilderness..."));
+                    guildsAndLocalsTokens.Add(tab);
+                    guildsAndLocalsTokens.Add(TextFile.CreateTextToken("0"));
+                    guildsAndLocalsTokens.Add(TextFile.NewLineToken);
+                    return; // Gracefully exit the method for this frame
+                }
 
                 // Check for special dumb cases
                 int peopleOfRegionFactionId = 0;
                 int courtOfRegionFactionId = 0;
                 if (currentRegionName == "Alik'r Desert") { currentRegionName = "Alikra"; peopleOfRegionFactionId = 590; courtOfRegionFactionId = 509; }
                 if (currentRegionName == "Dragontail Mountains") { currentRegionName = "Dragontail"; peopleOfRegionFactionId = 507; courtOfRegionFactionId = 506;}
-                if (currentRegionName == "Wrothgarian Mountains") { currentRegionName = "Wrothgaria"; peopleOfRegionFactionId = 504; courtOfRegionFactionId = 503; }
+                if (currentRegionName == "Wrothgarian Mountains") { currentRegionName = "Wrothcaria"; peopleOfRegionFactionId = 504; courtOfRegionFactionId = 503; }
                 if (currentRegionName == "Orsinium Area") { currentRegionName = "Orsinium"; peopleOfRegionFactionId = 599; courtOfRegionFactionId = 598; }
                 if (currentRegionName == "Isle of Balfiera") { currentRegionName = "Isle of Balfiera"; peopleOfRegionFactionId = 198; courtOfRegionFactionId = 244;}
 
@@ -212,7 +217,7 @@ namespace AffiliationsPlus
                 if (peopleOfRegionFactionId == 0)
                 {
                     peopleOfRegionFactionId = factionFile.GetFactionID(peopleFactionName);
-                }
+                    }
 
                 if (peopleOfRegionFactionId > 0)
                 {
@@ -220,7 +225,7 @@ namespace AffiliationsPlus
                     if (factionFile.GetFactionData(peopleOfRegionFactionId, out peopleFactionData))
                     {
                         int reputation = GameManager.Instance.PlayerEntity.FactionData.GetReputation(peopleFactionData.id);
-                        string reputationRank = AffiliationsPlus.ReputationText.GetReputationRankString(reputation);
+                        string reputationRank = StatsPlus.ReputationText.GetReputationRankString(reputation);
 
                         if (useRawNumbers)
                         {
@@ -231,12 +236,12 @@ namespace AffiliationsPlus
                         guildsAndLocalsTokens.Add(tab);
                         guildsAndLocalsTokens.Add(TextFile.CreateTextToken(reputationRank));
                         guildsAndLocalsTokens.Add(TextFile.NewLineToken);
-                        //Debug.Log($"[Stats+] Added dynamic faction: {peopleFactionData.name} (ID: {peopleFactionData.id}, Rep: {reputation}, Rank: {reputationRank})");
+                        //Debug.Log($"[StatsPlus] Added dynamic faction: {peopleFactionData.name} (ID: {peopleFactionData.id}, Rep: {reputation}, Rank: {reputationRank})");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"[Stats+] Could NOT find 'People of' faction for '{currentRegionName}'. (ID: {peopleOfRegionFactionId})");
+                    Debug.LogWarning($"[StatsPlus] Could NOT find 'People of' faction for '{currentRegionName}'. (ID: {peopleOfRegionFactionId})");
                 }
 
                 string courtFactionName = "Court of " + currentRegionName;
@@ -251,7 +256,7 @@ namespace AffiliationsPlus
                     if (factionFile.GetFactionData(courtOfRegionFactionId, out courtFactionData))
                     {
                         int reputation = GameManager.Instance.PlayerEntity.FactionData.GetReputation(courtFactionData.id);
-                        string reputationRank = AffiliationsPlus.ReputationText.GetReputationRankString(reputation);
+                        string reputationRank = StatsPlus.ReputationText.GetReputationRankString(reputation);
 
                         if (useRawNumbers)
                         {
@@ -262,12 +267,12 @@ namespace AffiliationsPlus
                         guildsAndLocalsTokens.Add(tab);
                         guildsAndLocalsTokens.Add(TextFile.CreateTextToken(reputationRank));
                         guildsAndLocalsTokens.Add(TextFile.NewLineToken);
-                        //Debug.Log($"[Stats+] Added dynamic faction: {courtFactionData.name} (ID: {courtFactionData.id}, Rep: {reputation}, Rank: {reputationRank})");
+                        //Debug.Log($"[StatsPlus] Added dynamic faction: {courtFactionData.name} (ID: {courtFactionData.id}, Rep: {reputation}, Rank: {reputationRank})");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"[Stats+] Could NOT find 'Court of' faction for '{currentRegionName}'. (ID: {courtOfRegionFactionId})");
+                    Debug.LogWarning($"[StatsPlus] Could NOT find 'Court of' faction for '{currentRegionName}'. (ID: {courtOfRegionFactionId})");
                 }
 
                 // LegalRep Implementation
@@ -278,7 +283,7 @@ namespace AffiliationsPlus
                     if (currentRegionDataIndex >= 0 && currentRegionDataIndex < GameManager.Instance.PlayerEntity.RegionData.Length)
                     {
                         short legalRep = GameManager.Instance.PlayerEntity.RegionData[currentRegionDataIndex].LegalRep;
-                        string legalRepRank = AffiliationsPlus.ReputationText.GetLegalReputationRankString(legalRep);
+                        string legalRepRank = StatsPlus.ReputationText.GetLegalReputationRankString(legalRep);
 
                         if (useRawNumbers)
                         {
@@ -289,22 +294,22 @@ namespace AffiliationsPlus
                         guildsAndLocalsTokens.Add(tab);
                         guildsAndLocalsTokens.Add(TextFile.CreateTextToken(legalRepRank));
                         guildsAndLocalsTokens.Add(TextFile.NewLineToken);
-                        //Debug.Log($"[Stats+] Added Legal Standing: (Rep: {legalRep}, Rank: {legalRepRank}) for region data index {currentRegionDataIndex}");
+                        //Debug.Log($"[StatsPlus] Added Legal Standing: (Rep: {legalRep}, Rank: {legalRepRank}) for region data index {currentRegionDataIndex}");
                     }
                     else
                     {
-                        Debug.LogWarning($"[Stats+] CurrentRegionDataIndex ({currentRegionDataIndex}) is out of bounds for PlayerEntity.RegionData array. Cannot display Legal Standing.");
+                        Debug.LogWarning($"[StatsPlus] CurrentRegionDataIndex ({currentRegionDataIndex}) is out of bounds for PlayerEntity.RegionData array. Cannot display Legal Standing.");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning("[Stats+] PlayerEntity or PlayerGPS not available. Cannot display Legal Standing.");
+                    Debug.LogWarning("[StatsPlus] PlayerEntity or PlayerGPS not available. Cannot display Legal Standing.");
                 }
             }
 
             else
             {
-                Debug.LogWarning("[Stats+] PlayerGPS or CurrentRegion not loaded for dynamic faction lookup.");
+                Debug.LogWarning("[StatsPlus] PlayerGPS or CurrentRegion not loaded for dynamic faction lookup.");
             }
         }
 
@@ -888,10 +893,10 @@ namespace AffiliationsPlus
                     // Raw Number vs. Text check
                     if (!useRawNumbers)
                     {
-                        if (tokenList == guildsAndLocalsTokens || tokenList == notablePeopleTokens) { reputationRank = AffiliationsPlus.ReputationText.GetReputationRankString(reputation); }
-                        if (tokenList == knightsTokens) { reputationRank = AffiliationsPlus.ReputationText.GetKnightlyReputationRankString(reputation); }
-                        if (tokenList == covensAndClansTokens) { reputationRank = AffiliationsPlus.ReputationText.GetCovenAndClanReputationRankString(reputation); }
-                        if (tokenList == religiousTokens) { reputationRank = AffiliationsPlus.ReputationText.GetReligiousReputationRankString(reputation); }
+                        if (tokenList == guildsAndLocalsTokens || tokenList == notablePeopleTokens) { reputationRank = StatsPlus.ReputationText.GetReputationRankString(reputation); }
+                        if (tokenList == knightsTokens) { reputationRank = StatsPlus.ReputationText.GetKnightlyReputationRankString(reputation); }
+                        if (tokenList == covensAndClansTokens) { reputationRank = StatsPlus.ReputationText.GetCovenAndClanReputationRankString(reputation); }
+                        if (tokenList == religiousTokens) { reputationRank = StatsPlus.ReputationText.GetReligiousReputationRankString(reputation); }
                     }
 
                     if (useRawNumbers)
@@ -950,11 +955,11 @@ namespace AffiliationsPlus
                         tokenList.Add(TextFile.NewLineToken);
                     }
 
-                    //Debug.Log($"[Stats+] Added hardcoded faction: {factionName} (ID: {factionId}, Rep: {reputation}, Rank: {reputationRank})");
+                    //Debug.Log($"[StatsPlus] Added hardcoded faction: {factionName} (ID: {factionId}, Rep: {reputation}, Rank: {reputationRank})");
                 }
                 else
                 {
-                    Debug.LogWarning($"[Stats+] Could NOT find FactionData for hardcoded ID: {factionId}. This ID might not exist in your FactionFile.");
+                    Debug.LogWarning($"[StatsPlus] Could NOT find FactionData for hardcoded ID: {factionId}. This ID might not exist in your FactionFile.");
                 }
             }
         }
@@ -980,7 +985,6 @@ namespace AffiliationsPlus
 
         public static void ResetWindowOpenState()
         {
-            // Static reset pairs with the static hotkey guard above.
             openedAffiliationsPlusWindow = false;
         }
         
@@ -1090,5 +1094,5 @@ namespace AffiliationsPlus
 
             return "Unknown Rank"; 
         }
-}
+    }
 }

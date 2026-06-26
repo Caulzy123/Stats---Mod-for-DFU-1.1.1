@@ -16,7 +16,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace AffiliationsPlus
+namespace StatsPlus
 {
     public class AffiliationsPlusWindow : DaggerfallPopupWindow
     {
@@ -51,7 +51,7 @@ namespace AffiliationsPlus
         {
             nativeTexture = DaggerfallUI.GetTextureFromImg(nativeImgName);
             if (!nativeTexture)
-                throw new Exception("[Stats+] Could not load background texture.");
+                throw new Exception("[StatsPlus] Could not load background texture.");
 
             Texture2D tex;
             bool textureLoaded = TextureReplacement.TryImportTexture(buttonImgName, true, out tex);
@@ -64,14 +64,14 @@ namespace AffiliationsPlus
             }
             else
             {
-                Debug.LogError("[Stats+] FAILED to load texture: " + buttonImgName + ". Check path and filename.");
+                Debug.LogError("[StatsPlus] FAILED to load texture: " + buttonImgName + ". Check path and filename.");
             }
 
             if (AffiliationsPlusMain.overrideDefaultSettings == true)
             {
                 int baseHeight = 7;
                 lineHeight = Mathf.Max(1, Mathf.FloorToInt(baseHeight * (AffiliationsPlusMain.textScale)));
-                Debug.Log($"[Stats+] line height is now {lineHeight}");
+                Debug.Log($"[StatsPlus] line height is now {lineHeight}");
             }
 
             float horizontalPadding = 10; 
@@ -280,13 +280,11 @@ namespace AffiliationsPlus
 
         void OnExitClicked()
         {
-            // Keep physical clicks and ESC cancellation on the exact same closure path.
             CancelWindow();
         }
 
         public override void CancelWindow()
         {
-            // ESC key cancellation must also release the hotkey guard in AffiliationsPlusMain.
             AffiliationsPlusMain.ResetWindowOpenState();
             base.CancelWindow();
         }

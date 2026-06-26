@@ -1,12 +1,12 @@
 // Project:         ViewableSkillProgress mod for Daggerfall Unity (http://www.dfworkshop.net)
 // Copyright:       Copyright (C) 2022 Kirk.O
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
-// Author:          Kirk.O
+// Author:          Caulzy
 // Version:			v.1.21
 // Created On: 	    3/20/2022, 12:00 PM
-// Last Edit:		8/2/2022, 8:10 PM
+// Last Edit:		22/6/2026, 8:10 PM
 // Modifier:
-// Special Thanks:  Alphaus, Kab the Bird Ranger, Hazelnut, BadLuckBurt, DunnyOfPenwick, Sordid, Evildari, Thevm, Nkrisztian89
+// Special Thanks:  Alphaus, Kab the Bird Ranger, Hazelnut, BadLuckBurt, DunnyOfPenwick, Sordid, Evildari, Thevm, Nkrisztian89, Kirk.O, and the Daggerfall Unity community for their support and feedback.
 
 using DaggerfallConnect;
 using DaggerfallWorkshop;
@@ -21,28 +21,22 @@ using DaggerfallWorkshop.Game.Utility;
 using DaggerfallWorkshop.Game.Serialization;
 using System;
 
-namespace ViewableSkillProgress
+namespace StatsPlus // MOVE SAVEDATA TYPES
 {
-    public class ViewableSkillProgressMain : MonoBehaviour, IHasModSaveData
+    public class ViewableSkillProgressMain : MonoBehaviour
     {
         static ViewableSkillProgressMain instance;
-
-        public static ViewableSkillProgressMain Instance
-        {
-            get { return instance ?? (instance = FindObjectOfType<ViewableSkillProgressMain>()); }
-        }
+        public static ViewableSkillProgressMain Instance { get { return instance ?? (instance = FindObjectOfType<ViewableSkillProgressMain>()); } }
 
         static Mod mod;
 
         // Options
         public static int ProgressDisplayType { get; set; }
         public static bool GovernAttributeText { get; set; }
-
         public static int ProgressTextType { get; set; }
         public static int TextWithOrWithoutBrackets { get; set; }
         public static float ProgressTextScale { get; set; }
         public static Color32 ProgressTextColor { get; set; }
-
         public static int ProgressBarPosX { get; set; }
         public static int ProgressBarPosY { get; set; }
         public static int ProgressBarWidth { get; set; }
@@ -51,7 +45,6 @@ namespace ViewableSkillProgress
         public static Color32 ReadyToLevelBarColor { get; set; }
         public static Color32 MasteredBarColor { get; set; }
         public static Color32 MaxedBarColor { get; set; }
-
         public static bool SkillReadyNotifications { get; set; }
         public static int NotificationCheckFrequency { get; set; }
         public static bool AllowSoundNotification { get; set; }
@@ -65,44 +58,37 @@ namespace ViewableSkillProgress
 
         // Global Variables
         public static int FixedUpdateCounter { get; set; }
+        
+        // Optimisation: Initialize with exact capacity to prevent heap reallocations
+        private static List<DFCareer.Skills> playerSkills = new List<DFCareer.Skills>(35);
 
-        private static PlayerEntity player = GameManager.Instance.PlayerEntity;
-        private static List<DFCareer.Skills> playerSkills = new List<DFCareer.Skills>();
-        private static short[] validSoundClipIndexArray = new short[62] {
-            361, 74, 300, 316, 362, 363, 364, 383, 380, 449, 450, 452, 304, 308, 18, 19, 94, 107,
-            69, 16, 31, 348, 342, 26, 365, 28, 369, 370, 366, 32, 33, 99, 100, 101, 102, 103, 129,
-            134, 158, 196, 197, 320, 39, 321, 335, 251, 155, 156, 161, 162, 164, 165, 167, 168, 200,
-            205, 202, 208, 455, 302, 345, 456 };
+        private static readonly short[] validSoundClipIndexArray = new short[62] { 
+            361, 74, 300, 316, 362, 363, 364, 383, 380, 449, 450, 452, 304, 308, 18, 19, 94, 107, 69, 16, 31, 
+            348, 342, 26, 365, 28, 369, 370, 366, 32, 33, 99, 100, 101, 102, 103, 129, 134, 158, 196, 197, 
+            320, 39, 321, 335, 251, 155, 156, 161, 162, 164, 165, 167, 168, 200, 205, 202, 208, 455, 302, 345, 456 
+        };
 
         [Invoke(StateManager.StateTypes.Start, 0)]
         public static void Init(InitParams initParams)
         {
             mod = initParams.Mod;
-            instance = new GameObject("ViewableSkillProgress").AddComponent<ViewableSkillProgressMain>(); // Add script to the scene.
-            mod.SaveDataInterface = instance;
-
-            mod.LoadSettingsCallback = LoadSettings; // To enable use of the "live settings changes" feature in-game.
-
+            instance = new GameObject("ViewableSkillProgress").AddComponent<ViewableSkillProgressMain>();
+            mod.LoadSettingsCallback = LoadSettings;
             mod.IsReady = true;
         }
 
         private void Start()
         {
             Debug.Log("Begin mod init: Viewable Skill Progress");
-
             mod.LoadSettings();
-
             UIWindowFactory.RegisterCustomUIWindow(UIWindowType.CharacterSheet, typeof(VSPCharacterSheetOverride));
-            Debug.Log("ViewableSkillProgress Registered Override For DaggerfallCharacterSheetWindow");
-
+            
             StartGameBehaviour.OnStartGame += PopulateSkillList_OnStartGame;
             SaveLoadManager.OnLoad += PopulateSkillList_OnSaveLoad;
-
             Debug.Log("Finished mod init: Viewable Skill Progress");
         }
 
         #region Settings
-
         static void LoadSettings(ModSettings modSettings, ModSettingsChange change)
         {
             int storedSoundIndex = -1;
@@ -111,12 +97,10 @@ namespace ViewableSkillProgress
 
             ProgressDisplayType = mod.GetSettings().GetValue<int>("GeneralSettings", "DisplayType");
             GovernAttributeText = mod.GetSettings().GetValue<bool>("GeneralSettings", "ShowGovAttributeText");
-
             ProgressTextType = mod.GetSettings().GetValue<int>("TextSettings", "TextDisplayType");
             TextWithOrWithoutBrackets = mod.GetSettings().GetValue<int>("TextSettings", "TextBrackets");
             ProgressTextScale = mod.GetSettings().GetValue<float>("TextSettings", "TextScale");
             ProgressTextColor = mod.GetSettings().GetValue<Color32>("TextSettings", "TextColor");
-
             ProgressBarPosX = mod.GetSettings().GetValue<int>("ProgressBarSettings", "BarPositionX");
             ProgressBarPosY = mod.GetSettings().GetValue<int>("ProgressBarSettings", "BarPositionY");
             ProgressBarWidth = mod.GetSettings().GetValue<int>("ProgressBarSettings", "ProgBarWidth");
@@ -125,7 +109,6 @@ namespace ViewableSkillProgress
             ReadyToLevelBarColor = mod.GetSettings().GetValue<Color32>("ProgressBarSettings", "ReadyToLevelColor");
             MasteredBarColor = mod.GetSettings().GetValue<Color32>("ProgressBarSettings", "MasteredColor");
             MaxedBarColor = mod.GetSettings().GetValue<Color32>("ProgressBarSettings", "MaxedColor");
-
             SkillReadyNotifications = mod.GetSettings().GetValue<bool>("NotificationSettings", "SkillReadyNotif");
             NotificationCheckFrequency = mod.GetSettings().GetValue<int>("NotificationSettings", "NotifCheckFreq");
             AllowSoundNotification = mod.GetSettings().GetValue<bool>("NotificationSettings", "AllowSoundNotif");
@@ -139,7 +122,6 @@ namespace ViewableSkillProgress
 
             PopulatePlayerSkillList();
         }
-
         #endregion
 
         static void PopulateSkillList_OnStartGame(object sender, EventArgs e)
@@ -154,8 +136,8 @@ namespace ViewableSkillProgress
 
         static void PopulatePlayerSkillList()
         {
-            if (player == null)
-                return;
+            PlayerEntity player = GameManager.Instance.PlayerEntity;
+            if (player == null) return;
 
             playerSkills.Clear();
             playerSkills.AddRange(player.GetPrimarySkills());
@@ -166,37 +148,29 @@ namespace ViewableSkillProgress
 
         private void FixedUpdate()
         {
-            if (!SkillReadyNotifications)
-                return;
+            if (!SkillReadyNotifications) return;
+            if (SaveLoadManager.Instance.LoadInProgress) return;
+            if (GameManager.IsGamePaused) return;
 
-            if (SaveLoadManager.Instance.LoadInProgress)
-                return;
-
-            if (GameManager.IsGamePaused)
-                return;
-
-            FixedUpdateCounter++; // Increments the FixedUpdateCounter by 1 every FixedUpdate.
-
-            if (FixedUpdateCounter >= 50 * NotificationCheckFrequency) // 50 FixedUpdates is approximately equal to 1 second since each FixedUpdate happens every 0.02 seconds, that's what Unity docs say at least.
+            FixedUpdateCounter++;
+            if (FixedUpdateCounter >= 50 * NotificationCheckFrequency)
             {
                 FixedUpdateCounter = 0;
-
-                if (playerSkills.Count > 0)
+                int skillCount = playerSkills.Count;
+                
+                // Optimisation: Avoid out-of-bounds errors dynamically
+                if (skillCount > 0 && skillCount <= notifiedSkillsList.Length)
                 {
-                    for (int i = 0; i < playerSkills.Count; i++)
+                    for (int i = 0; i < skillCount; i++)
                     {
                         float cT = VSPCharacterSheetOverride.CurrentTallyCount(playerSkills[i]);
                         float aT = VSPCharacterSheetOverride.TallysNeededToAdvance(playerSkills[i]);
-                        if (cT > aT)
-                            cT = aT;
 
-                        if (notifiedSkillsList[i] == 1 && cT < aT)
-                            notifiedSkillsList[i] = 0;
-
+                        if (cT > aT) cT = aT;
+                        if (notifiedSkillsList[i] == 1 && cT < aT) notifiedSkillsList[i] = 0;
                         if (notifiedSkillsList[i] == 0 && cT >= aT)
                         {
                             notifiedSkillsList[i] = 1;
-
                             NotifyPlayer(playerSkills[i]);
                         }
                     }
@@ -206,14 +180,13 @@ namespace ViewableSkillProgress
 
         public static void NotifyPlayer(DFCareer.Skills skill)
         {
-            if (GameManager.Instance.PlayerDeath.DeathInProgress)
-                return;
+            if (GameManager.Instance.PlayerDeath.DeathInProgress) return;
+            
+            PlayerEntity player = GameManager.Instance.PlayerEntity;
+            if (player == null) return;
 
-            if (GameManager.Instance.PlayerEntity.Skills.GetPermanentSkillValue(skill) >= 100)
-                return;
-
-            if (GameManager.Instance.PlayerEntity.AlreadyMasteredASkill() && GameManager.Instance.PlayerEntity.Skills.GetPermanentSkillValue(skill) >= 95)
-                return;
+            if (player.Skills.GetPermanentSkillValue(skill) >= 100) return;
+            if (player.AlreadyMasteredASkill() && player.Skills.GetPermanentSkillValue(skill) >= 95) return;
 
             if (AllowHUDTextNotification)
             {
@@ -222,7 +195,7 @@ namespace ViewableSkillProgress
 
             if (AllowSoundNotification)
             {
-                if (DaggerfallUI.Instance.DaggerfallAudioSource != null && !DaggerfallUI.Instance.DaggerfallAudioSource.IsPlaying()) // Meant to keep notification sound from overlapping each other.
+                if (DaggerfallUI.Instance.DaggerfallAudioSource != null && !DaggerfallUI.Instance.DaggerfallAudioSource.IsPlaying())
                 {
                     DaggerfallUI.Instance.DaggerfallAudioSource.PlayOneShot((SoundClips)validSoundClipIndexArray[NotificationSoundClip], 0, SoundClipVolume);
                 }
@@ -230,82 +203,45 @@ namespace ViewableSkillProgress
         }
 
         public static string CreateNotificationText(DFCareer.Skills skill)
+
         {
-            int variant = UnityEngine.Random.Range(0, 4);
-            string raw = "";
-
-            if (NotificationTextType == 1)
+            string skillName = DaggerfallUnity.Instance.TextProvider.GetSkillName(skill);
+                if (NotificationTextType != 1)
             {
-                if (variant == 0)
-                {
-                    raw = "You should meditate on what you have learned about " + DaggerfallUnity.Instance.TextProvider.GetSkillName(skill) + ".";
+            return string.Format("{0} is ready.", skillName);
                 }
-                else if (variant == 1)
+                int variant = UnityEngine.Random.Range(0, 4);switch (variant)
                 {
-                    raw = "Perhaps it is time to reflect on what you have learned about " + DaggerfallUnity.Instance.TextProvider.GetSkillName(skill) + ".";
+                case 0: return string.Format("You should meditate on what you have learned about {0}.", skillName);
+                case 1: return string.Format("Perhaps it is time to reflect on what you have learned about {0}.", skillName);
+                case 2: return string.Format("After much practice, you feel ready to advance further in {0}.", skillName);
+                default: return string.Format("You should rest on what you have learned about {0}.", skillName);
                 }
-                else if (variant == 2)
-                {
-                    raw = "After much practice, you feel ready to advance further in " + DaggerfallUnity.Instance.TextProvider.GetSkillName(skill) + ".";
-                }
-                else
-                {
-                    raw = "You should rest on what you have learned about " + DaggerfallUnity.Instance.TextProvider.GetSkillName(skill) + ".";
-                }
-
-                /*string[] raws = new string[4]{
-                    "You should meditate on what you have learned about " + DaggerfallUnity.Instance.TextProvider.GetSkillName(skill) + ".",
-                    "You should rest on what you have learned about " + DaggerfallUnity.Instance.TextProvider.GetSkillName(skill) + ".",
-                    "",
-                    "Far"
-                };
-
-                return raws[UnityEngine.Random.Range(0, raws.Length)];*/
             }
-            else
-            {
-                raw = DaggerfallUnity.Instance.TextProvider.GetSkillName(skill) + " is ready.";
-            }
-
-            return raw;
-        }
-
-        #region SaveData Junk
-
-        public Type SaveDataType
-        {
-            get { return typeof(ViewableSkillProgressSaveData); }
-        }
-
+            #region SaveData Junk
+        public Type SaveDataType { get { return typeof(ViewableSkillProgressSaveData); } }
         public object NewSaveData()
-        {
-            return new ViewableSkillProgressSaveData
-            {
-                NotifiedSkillsList = new byte[35]
-            };
-        }
 
-        public object GetSaveData()
-        {
-            return new ViewableSkillProgressSaveData
             {
-                NotifiedSkillsList = notifiedSkillsList
-            };
-        }
+            return new ViewableSkillProgressSaveData { NotifiedSkillsList = new byte[35] };
+            }
+        public object GetSaveData()
+
+            {
+            return new ViewableSkillProgressSaveData { NotifiedSkillsList = notifiedSkillsList };
+            }
 
         public void RestoreSaveData(object saveData)
-        {
+            {
             var viewableSkillProgressSaveData = (ViewableSkillProgressSaveData)saveData;
-            notifiedSkillsList = viewableSkillProgressSaveData.NotifiedSkillsList;
-        }
-    }
-
-    [FullSerializer.fsObject("v1")]
-    public class ViewableSkillProgressSaveData
-    {
+                notifiedSkillsList = viewableSkillProgressSaveData.NotifiedSkillsList;
+                }
+            }
+            [FullSerializer.fsObject("v1")]
+        public class ViewableSkillProgressSaveData
+        {
         public byte[] NotifiedSkillsList;
-    }
-
-    #endregion
-
-}
+        }
+        #endregion
+        }
+            
